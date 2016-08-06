@@ -43,7 +43,7 @@ class Manager(object):
         self._dns_resolver = asyncdns.DNSResolver()
         self._dns_resolver.add_to_loop(self._loop)
 
-        self._statistics = collections.defaultdict(int)
+        self._statistics = collections.defaultdict(lambda: [0, 0])
         self._control_client_addr = None
         try:
             manager_address = config['manager_address']
@@ -163,8 +163,8 @@ class Manager(object):
             logging.error(e)
             return None
 
-    def stat_callback(self, port, data_len):
-        self._statistics[port] += data_len
+    def stat_callback(self, port, direction, data_len):
+        self._statistics[port][direction] += data_len
 
     def handle_periodic(self):
         r = {}

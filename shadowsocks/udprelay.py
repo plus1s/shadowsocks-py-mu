@@ -71,7 +71,7 @@ import random
 
 from shadowsocks import encrypt, eventloop, lru_cache, common, shell
 from shadowsocks.common import parse_header, pack_addr, onetimeauth_verify, \
-    onetimeauth_gen, ONETIMEAUTH_BYTES, ADDRTYPE_AUTH
+    onetimeauth_gen, ONETIMEAUTH_BYTES, ADDRTYPE_AUTH, U, D
 
 
 BUF_SIZE = 65536
@@ -160,7 +160,7 @@ class UDPRelay(object):
             logging.debug('U[%d] UDP handle_server: data is empty' %
                           self._config['server_port'])
         if self._stat_callback:
-            self._stat_callback(self._listen_port, len(data))
+            self._stat_callback(self._listen_port, U, len(data))
         if self._is_local:
             frag = common.ord(data[2])
             if frag != 0:
@@ -290,7 +290,7 @@ class UDPRelay(object):
                           self._config['server_port'])
             return
         if self._stat_callback:
-            self._stat_callback(self._listen_port, len(data))
+            self._stat_callback(self._listen_port, D, len(data))
         if not self._is_local:
             addrlen = len(r_addr[0])
             if addrlen > 255:

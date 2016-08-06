@@ -30,6 +30,11 @@ ONETIMEAUTH_CHUNK_BYTES = 12
 ONETIMEAUTH_CHUNK_DATA_LEN = 2
 
 
+# Index consts for transfer statistics
+U = 0
+D = 1
+
+
 def sha1_hmac(secret, data):
     return hmac.new(secret, data, hashlib.sha1).digest()
 

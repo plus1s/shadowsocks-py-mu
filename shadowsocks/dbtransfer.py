@@ -25,7 +25,10 @@ import urllib
 # TODO: urllib2 does not exist in python 3.5+
 import urllib2
 if not config.API_ENABLED:
-	import cymysql
+    import cymysql
+
+from shadowsocks.common import U, D
+
 
 class DbTransfer(object):
 
@@ -83,11 +86,11 @@ class DbTransfer(object):
                 logging.info('api upload: pushing transfer statistics')
             users = DbTransfer.pull_api_user()
             for port in dt_transfer.keys():
-            	user = None
-            	for result in users:
-            		if str(result[0]) == port:
-            			user = result[9]
-            			break
+                user = None
+                for result in users:
+                    if str(result[0]) == port:
+                        user = result[9]
+                        break
                 if not user:
                     logging.warn('U[%s] User Not Found', port)
                     server = json.loads(DbTransfer.get_instance().send_command(
@@ -100,8 +103,11 @@ class DbTransfer(object):
                     continue
                 if config.SS_VERBOSE:
                     logging.info('U[%s] User ID Obtained:%s' % (port, user))
-                tran = str(dt_transfer[port])
-                data = {'d': tran, 'node_id': config.NODE_ID, 'u': '0'}
+                data = {
+                    'u': dt_transfer[port][U],
+                    'd': dt_transfer[port][D],
+                    'node_id': config.NODE_ID,
+                }
                 url = config.API_URL + '/users/' + \
                     str(user) + '/traffic?key=' + config.API_PASS
                 data = urllib.urlencode(data)
@@ -153,9 +159,10 @@ class DbTransfer(object):
             query_sub_in = None
             last_time = time.time()
             for port in dt_transfer.keys():
-                query_sub_when += ' WHEN %s THEN `u`+%s' % (port, 0)  # all in d
+                query_sub_when += ' WHEN %s THEN `u`+%s' % (
+                    port, dt_transfer[port][U])
                 query_sub_when2 += ' WHEN %s THEN `d`+%s' % (
-                    port, dt_transfer[port])
+                    port, dt_transfer[port][D])
                 if query_sub_in is not None:
                     query_sub_in += ',%s' % port
                 else:

@@ -31,7 +31,7 @@ import random
 from shadowsocks import encrypt, eventloop, shell, common
 from shadowsocks.common import parse_header, onetimeauth_verify, \
     onetimeauth_gen, ONETIMEAUTH_BYTES, ONETIMEAUTH_CHUNK_BYTES, \
-    ONETIMEAUTH_CHUNK_DATA_LEN, ADDRTYPE_AUTH
+    ONETIMEAUTH_CHUNK_DATA_LEN, ADDRTYPE_AUTH, U, D
 
 # we clear at most TIMEOUTS_CLEAN_SIZE timeouts each time
 TIMEOUTS_CLEAN_SIZE = 512
@@ -159,10 +159,10 @@ class TCPRelayHandler(object):
         logging.debug('chosen server: %s:%d', server, server_port)
         return server, server_port
 
-    def _update_activity(self, data_len=0):
+    def _update_activity(self, direction=D, data_len=0):
         # tell the TCP Relay we have activities recently
         # else it will think we are inactive and timed out
-        self._server.update_activity(self, data_len)
+        self._server.update_activity(self, direction, data_len)
 
     def _update_stream(self, stream, status):
         # update a stream to a new waiting status
@@ -532,7 +532,7 @@ class TCPRelayHandler(object):
         if not data:
             self.destroy()
             return
-        self._update_activity(len(data))
+        self._update_activity(U, len(data))
         if not is_local:
             data = self._encryptor.decrypt(data)
             if not data:
@@ -569,7 +569,7 @@ class TCPRelayHandler(object):
         if not data:
             self.destroy()
             return
-        self._update_activity(len(data))
+        self._update_activity(D, len(data))
         if self._is_local:
             data = self._encryptor.decrypt(data)
         else:
@@ -747,9 +747,9 @@ class TCPRelay(object):
             self._timeouts[index] = None
             del self._handler_to_timeouts[hash(handler)]
 
-    def update_activity(self, handler, data_len):
+    def update_activity(self, handler, direction, data_len):
         if data_len and self._stat_callback:
-            self._stat_callback(self._listen_port, data_len)
+            self._stat_callback(self._listen_port, direction, data_len)
 
         # set handler to active
         now = int(time.time())
