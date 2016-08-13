@@ -98,7 +98,7 @@ def main():
     if config.API_ENABLED:
         logging.info('Now using MultiUser API as the user interface')
     else:
-        logging.info('Now using MySQL Database as the user interface')
+        logging.info('Now using Database as the user interface')
     logging.info('Now starting manager thread...')
     thread.start_new_thread(manager.run, (configer,subprocess_callback,))
     time.sleep(5)
@@ -107,7 +107,7 @@ def main():
     time.sleep(5)
     logging.info('Now starting user pushing thread...')
     thread.start_new_thread(DbTransfer.thread_push, ())
-    
+
     while True:
         time.sleep(100)
 

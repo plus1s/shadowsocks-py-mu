@@ -26,6 +26,7 @@ import urllib
 import urllib2
 if not config.API_ENABLED:
     import cymysql
+    import psycopg2
 
 from shadowsocks.common import U, D
 
@@ -76,6 +77,16 @@ class DbTransfer(object):
             dt_transfer.update(data)
         cli.close()
         return dt_transfer
+
+    @staticmethod
+    def get_db_conn():
+        if config.DB_TYPE == 'mysql':
+            conn = cymysql.connect(host=config.DB_HOST, port=config.DB_PORT, user=config.DB_USER,
+                                   passwd=config.DB_PASS, db=config.DB_NAME, charset='utf8')
+        else:  # postgresql
+            conn = psycopg2.connect(host=config.DB_HOST, port=config.DB_PORT, user=config.DB_USER,
+                                    password=config.DB_PASS, database=config.DB_NAME)
+        return conn
 
     def push_db_all_user(self):
         dt_transfer = self.get_servers_transfer()
@@ -153,7 +164,7 @@ class DbTransfer(object):
                 logging.info('%s - %s - %s' % (url, data, the_page))
                 logging.info('api uploaded')
         else:
-            query_head = 'UPDATE `user`'
+            query_head = 'UPDATE `%s`' % config.DB_USER_TABLE
             query_sub_when = ''
             query_sub_when2 = ''
             query_sub_in = None
@@ -174,8 +185,7 @@ class DbTransfer(object):
                 ' END, t = ' + str(int(last_time)) + \
                 ' WHERE port IN (%s)' % query_sub_in
             # print query_sql
-            conn = cymysql.connect(host=config.MYSQL_HOST, port=config.MYSQL_PORT, user=config.MYSQL_USER,
-                                   passwd=config.MYSQL_PASS, db=config.MYSQL_DB, charset='utf8')
+            conn = DbTransfer.get_db_conn()
             cur = conn.cursor()
             cur.execute(query_sql)
             cur.close()
@@ -229,7 +239,7 @@ class DbTransfer(object):
 
     @staticmethod
     def thread_db():
-        socket.setdefaulttimeout(config.MYSQL_TIMEOUT)
+        socket.setdefaulttimeout(config.DB_TIMEOUT)
         while True:
             try:
                 rows = DbTransfer.pull_db_all_user()
@@ -244,7 +254,7 @@ class DbTransfer(object):
 
     @staticmethod
     def thread_push():
-        socket.setdefaulttimeout(config.MYSQL_TIMEOUT)
+        socket.setdefaulttimeout(config.DB_TIMEOUT)
         while True:
             try:
                 DbTransfer.get_instance().push_db_all_user()
@@ -273,11 +283,10 @@ class DbTransfer(object):
                     string = ' WHERE `port`<>%d' % port
                 else:
                     string = '%s AND `port`<>%d' % (string, port)
-            conn = cymysql.connect(host=config.MYSQL_HOST, port=config.MYSQL_PORT, user=config.MYSQL_USER,
-                                   passwd=config.MYSQL_PASS, db=config.MYSQL_DB, charset='utf8')
+            conn = DbTransfer.get_db_conn()
             cur = conn.cursor()
             cur.execute('SELECT port, u, d, transfer_enable, passwd, switch, enable, method, email FROM %s%s ORDER BY `port` ASC'
-                        % (config.MYSQL_USER_TABLE, string))
+                        % (config.DB_USER_TABLE, string))
             rows = []
             for r in cur.fetchall():
                 rows.append(list(r))

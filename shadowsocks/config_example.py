@@ -15,15 +15,17 @@ CONFIG_VERSION = '20160623-2'
 API_ENABLED = False
 
 # Database Config
-MYSQL_HOST = 'mengsky.net'
-MYSQL_PORT = 3306
-MYSQL_USER = 'root'
-MYSQL_PASS = 'root'
-MYSQL_DB = 'shadowsocks'
+# `mysql` or `postgresql`
+DB_TYPE = 'mysql'
+DB_HOST = 'mengsky.net'
+DB_PORT = 3306
+DB_USER = 'root'
+DB_PASS = 'root'
+DB_NAME = 'shadowsocks'
 # USUALLY this variable do not need to be changed
-MYSQL_USER_TABLE = 'user'
+DB_USER_TABLE = 'user'
 # This is also the timeout of connecting to the API
-MYSQL_TIMEOUT = 30
+DB_TIMEOUT = 30
 
 # Shadowsocks MultiUser API Settings
 API_URL = 'http://domain/mu'
