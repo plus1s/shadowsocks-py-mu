@@ -164,15 +164,15 @@ class DbTransfer(object):
                 logging.info('%s - %s - %s' % (url, data, the_page))
                 logging.info('api uploaded')
         else:
-            query_head = 'UPDATE `%s`' % config.DB_USER_TABLE
+            query_head = 'UPDATE %s' % config.DB_USER_TABLE
             query_sub_when = ''
             query_sub_when2 = ''
             query_sub_in = None
             last_time = time.time()
             for port in dt_transfer.keys():
-                query_sub_when += ' WHEN %s THEN `u`+%s' % (
+                query_sub_when += ' WHEN %s THEN u + %s' % (
                     port, dt_transfer[port][U])
-                query_sub_when2 += ' WHEN %s THEN `d`+%s' % (
+                query_sub_when2 += ' WHEN %s THEN d + %s' % (
                     port, dt_transfer[port][D])
                 if query_sub_in is not None:
                     query_sub_in += ',%s' % port
@@ -280,12 +280,12 @@ class DbTransfer(object):
                 if config.SS_VERBOSE:
                     logging.info('db skipped port %d' % port)
                 if index == 0:
-                    string = ' WHERE `port`<>%d' % port
+                    string = ' WHERE port <> %d' % port
                 else:
-                    string = '%s AND `port`<>%d' % (string, port)
+                    string = '%s AND port <> %d' % (string, port)
             conn = DbTransfer.get_db_conn()
             cur = conn.cursor()
-            cur.execute('SELECT port, u, d, transfer_enable, passwd, switch, enable, method, email FROM %s%s ORDER BY `port` ASC'
+            cur.execute('SELECT port, u, d, transfer_enable, passwd, switch, enable, method, email FROM %s%s ORDER BY port ASC'
                         % (config.DB_USER_TABLE, string))
             rows = []
             for r in cur.fetchall():
