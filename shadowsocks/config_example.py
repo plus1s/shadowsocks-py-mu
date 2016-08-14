@@ -23,7 +23,7 @@ DB_USER = 'root'
 DB_PASS = 'root'
 DB_NAME = 'shadowsocks'
 # USUALLY this variable do not need to be changed
-DB_USER_TABLE = 'user'
+DB_USER_TABLE = 'users'
 # This is also the timeout of connecting to the API
 DB_TIMEOUT = 30
 
