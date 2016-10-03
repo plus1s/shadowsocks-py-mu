@@ -100,10 +100,11 @@ class UDPRelay(object):
         self._password = common.to_bytes(config['password'])
         self._method = config['method']
         self._timeout = config['timeout']
-        if 'one_time_auth' in config:
-            self._one_time_auth_enable = config['one_time_auth']
+        if 'one_time_auth' in config and config['one_time_auth']:
+            self._ota_enable = True
         else:
-            self._one_time_auth_enable = False
+            self._ota_enable = False
+        self._ota_enable_session = self._ota_enable
         self._is_local = is_local
         self._cache = lru_cache.LRUCache(timeout=config['timeout'],
                                          close_callback=self._close_client)
@@ -211,10 +212,11 @@ class UDPRelay(object):
         else:
             server_addr, server_port = dest_addr, dest_port
             # spec https://shadowsocks.org/en/spec/one-time-auth.html
-            if self._one_time_auth_enable or (addrtype & ADDRTYPE_AUTH == ADDRTYPE_AUTH):
-                if not self._one_time_auth_enable and self._config['verbose']:
-                        logging.info('U[%d] UDP one time auth automatically enabled' % self._config['server_port'])
-                self._one_time_auth_enable = True
+            self._ota_enable_session = addrtype & ADDRTYPE_AUTH
+            if self._ota_enable and not self._ota_enable_session:
+                logging.warn('U[%d] UDP one time auth is required!' % self._config['server_port'])
+                return
+            if self._ota_enable_session:
                 if len(data) < header_length + ONETIMEAUTH_BYTES:
                     logging.warn('U[%d] UDP one time auth header is too short' % self._config[
                                  'server_port'])
@@ -258,7 +260,7 @@ class UDPRelay(object):
         if self._is_local:
             key, iv, m = encrypt.gen_key_iv(self._password, self._method)
             # spec https://shadowsocks.org/en/spec/one-time-auth.html
-            if self._one_time_auth_enable:
+            if self._ota_enable_session:
                 data = self._ota_chunk_data_gen(key, iv, data)
             data = encrypt.encrypt_all_m(key, iv, m, self._method, data)
             if not data:
