@@ -279,22 +279,20 @@ class DbTransfer(object):
                 logging.info('api downloaded')
             return rows
         else:
-            string = ''
-            for index in range(len(config.SS_SKIP_PORTS)):
-                port = config.SS_SKIP_PORTS[index]
+            strings = ['']
+            for port in config.SS_SKIP_PORTS:
                 if config.SS_VERBOSE:
                     logging.info('db skipped port %d' % port)
-                if index == 0:
-                    string = ' WHERE port <> %d' % port
+                if not config.SS_SKIP_PORTS.index(port):
+                    strings.append('WHERE')
                 else:
-                    string = '%s AND port <> %d' % (string, port)
+                    strings.append('AND')
+                strings.append('port <> {}'.format(port))
             conn = DbTransfer.get_db_conn()
             cur = conn.cursor()
             cur.execute('SELECT port, u, d, transfer_enable, passwd, switch, enable, method, email FROM %s%s ORDER BY port ASC'
-                        % (config.DB_USER_TABLE, string))
-            rows = []
-            for r in cur.fetchall():
-                rows.append(list(r))
+                        % (config.DB_USER_TABLE, ' '.join(strings)))
+            rows = map(list, cur.fetchall())
             # Release resources
             cur.close()
             conn.close()
