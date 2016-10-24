@@ -69,6 +69,7 @@ else:
 def subprocess_callback(stack, exception):
     logging.info('Exception thrown in %s: %s' % (stack, exception))
 
+
 def main():
     if config.SS_FIREWALL_ENABLED:
         if config.SS_FIREWALL_MODE == 'blacklist':
@@ -95,12 +96,9 @@ def main():
     logging.info('-----------------------------------------')
     logging.info('Multi-User Shadowsocks Server Starting...')
     logging.info('Current Server Version: %s' % VERSION)
-    if config.API_ENABLED:
-        logging.info('Now using MultiUser API as the user interface')
-    else:
-        logging.info('Now using Database as the user interface')
+    logging.info('Now using Database as the user interface')
     logging.info('Now starting manager thread...')
-    thread.start_new_thread(manager.run, (configer,subprocess_callback,))
+    thread.start_new_thread(manager.run, (configer, subprocess_callback,))
     time.sleep(5)
     logging.info('Now starting user pulling thread...')
     thread.start_new_thread(DbTransfer.thread_db, ())

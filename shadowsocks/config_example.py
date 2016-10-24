@@ -9,11 +9,6 @@ CONFIG_VERSION = '20160623-2'
 
 # Manyuser Interface Settings
 # ---------------------------
-# If API is enabled, database will be no longer used
-# The known app that supports API is SS-Panel V3
-# Be careful and check whether your app supports this API BEFORE you enable this feature
-API_ENABLED = False
-
 # Database Config
 # `mysql` or `postgresql`
 DB_TYPE = 'mysql'
@@ -24,18 +19,11 @@ DB_PASS = 'root'
 DB_NAME = 'shadowsocks'
 # USUALLY this variable do not need to be changed
 DB_USER_TABLE = 'users'
-# This is also the timeout of connecting to the API
 DB_TIMEOUT = 30
 
-# Shadowsocks MultiUser API Settings
-API_URL = 'http://domain/mu'
-# API Key (you can find this in the .env file if you are using SS-Panel V3)
-API_PASS = 'mupass'
-NODE_ID = '1'
-
-# Time interval between 2 pulls from the database or API
+# Time interval between 2 pulls from the database
 CHECKTIME = 30
-# Time interval between 2 pushes to the database or API
+# Time interval between 2 pushes to the database
 SYNCTIME = 120
 # Choose True if you want to use custom method and False if you don't
 CUSTOM_METHOD = True
