@@ -195,7 +195,12 @@ class DbTransfer(object):
                 logging.info('db uploaded')
 
     @staticmethod
-    def del_server_out_of_bound_safe(rows):
+    def update_servers(rows):
+        """
+        - Stop a server if the user is disabled or runs out of bwlimit
+        - Restart a server if the user changes the encryption method
+        - Start a valid server if it's not running (normally, newly added servers)
+        """
         for row in rows:
             server = json.loads(DbTransfer.get_instance().send_command(
                 'stat: {"server_port":%s}' % row[0]))
@@ -243,7 +248,7 @@ class DbTransfer(object):
         while True:
             try:
                 rows = DbTransfer.pull_db_all_user()
-                DbTransfer.del_server_out_of_bound_safe(rows)
+                DbTransfer.update_servers(rows)
             except Exception as e:
                 if config.SS_VERBOSE:
                     import traceback
