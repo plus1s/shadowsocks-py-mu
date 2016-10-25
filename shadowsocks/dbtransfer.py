@@ -3,6 +3,7 @@
 #
 # Copyright 2015 mengskysama
 # Copyright 2016 Howard Liu
+# Copyright 2016 Plus1s
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -16,13 +17,21 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import logging
+import sys
+import json
 import time
 import socket
+import logging
+import pyrad
 import config
-import json
-import cymysql
-import psycopg2
+
+if config.DB_TYPE == 'mysql':
+    import cymysql
+elif config.DB_TYPE == 'postgresql':
+    import psycopg2
+else:
+    logging.critical('CRIT: Please set DB_TYPE in your config file.')
+    sys.exit(2)
 
 from shadowsocks.common import U, D
 
