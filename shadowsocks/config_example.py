@@ -1,5 +1,5 @@
 # !!! Please rename config_example.py as config.py BEFORE editing it !!!
-
+import socket
 import logging
 # !!! Only edit this line when you update your configuration file !!!
 # After you update, the values of CONFIG_VERSION in config.py and
@@ -9,6 +9,7 @@ CONFIG_VERSION = '20160623-2'
 
 # Manyuser Interface Settings
 # ---------------------------
+NODE_NAME = socket.gethostname()
 # Database Config
 # `mysql` or `postgresql`
 DB_TYPE = 'mysql'
@@ -28,6 +29,12 @@ SYNCTIME = 120
 # Choose True if you want to use custom method and False if you don't
 CUSTOM_METHOD = True
 
+# Radius Config
+RADIUS_SERVER = '127.0.0.1'
+RADIUS_SECRET = 'testing123'
+RADIUS_DICTIONARY = '/usr/share/freeradius/dictionary'
+RADIUS_IDLE_TIMEOUT = 300
+RADIUS_NAS_IP = '127.0.0.1'
 
 # Manager Settings
 # ----------------
