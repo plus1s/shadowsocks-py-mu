@@ -18,23 +18,15 @@
 # under the License.
 
 import re
-import sys
 import json
 import time
-import socket
-import logging
 import pyrad
 import config
+import socket
+import logging
+import psycopg2
+
 from datetime import datetime, timedelta
-
-if config.DB_TYPE == 'mysql':
-    import cymysql
-elif config.DB_TYPE == 'postgresql':
-    import psycopg2
-else:
-    logging.critical('CRIT: Please set DB_TYPE in your config file.')
-    sys.exit(2)
-
 from shadowsocks.common import U, D
 
 
@@ -125,20 +117,13 @@ class DbTransfer(object):
 
     @staticmethod
     def get_db_conn():
-        if config.DB_TYPE == 'mysql':
-            conn = cymysql.connect(host=config.DB_HOST, port=config.DB_PORT, user=config.DB_USER,
-                                   passwd=config.DB_PASS, db=config.DB_NAME, charset='utf8')
-        else:  # postgresql
-            conn = psycopg2.connect(host=config.DB_HOST, port=config.DB_PORT, user=config.DB_USER,
-                                    password=config.DB_PASS, database=config.DB_NAME)
-        return conn
+        return psycopg2.connect(host=config.DB_HOST, port=config.DB_PORT, user=config.DB_USER,
+                                password=config.DB_PASS, database=config.DB_NAME)
 
     @staticmethod
     def get_radclient():
-        radclient = pyrad.Client(server=config.RADIUS_SERVER,
-                                 secret=config.RADIUS_SECRET,
-                                 dict=pyrad.dictionary.Dictionary(config.RADIUS_DICTIONARY))
-        return radclient
+        return pyrad.Client(server=config.RADIUS_SERVER, secret=config.RADIUS_SECRET,
+                            dict=pyrad.dictionary.Dictionary(config.RADIUS_DICTIONARY))
 
     @staticmethod
     def push_all_users(users, accts):

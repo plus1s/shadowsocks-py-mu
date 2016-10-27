@@ -11,15 +11,11 @@ CONFIG_VERSION = '20160623-2'
 # ---------------------------
 NODE_NAME = socket.gethostname()
 # Database Config
-# `mysql` or `postgresql`
-DB_TYPE = 'mysql'
-DB_HOST = 'mengsky.net'
-DB_PORT = 3306
-DB_USER = 'root'
-DB_PASS = 'root'
-DB_NAME = 'shadowsocks'
-# USUALLY this variable do not need to be changed
-DB_USER_TABLE = 'users'
+DB_HOST = 'radiusdb.com'
+DB_PORT = 5432
+DB_USER = 'dbuser'
+DB_PASS = 'dbpass'
+DB_NAME = 'radius'
 DB_TIMEOUT = 30
 
 # Time interval between 2 pulls from the database
@@ -62,7 +58,7 @@ SS_OTA = False
 # Skip listening these ports
 SS_SKIP_PORTS = [80]
 # TCP Fastopen (Some OS may not support this, Eg.: Windows)
-SS_FASTOPEN = False
+SS_FASTOPEN = True
 # Shadowsocks Time Out
 # It should > 180s as some protocol has keep-alive packet of 3 min, Eg.: bt
 SS_TIMEOUT = 185
