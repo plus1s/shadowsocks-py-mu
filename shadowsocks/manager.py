@@ -81,11 +81,11 @@ class Manager(object):
         port = int(config['server_port'])
         servers = self._relays.get(port, None)
         if servers:
-            logging.error("Server Exists:  P[%d], M[%s], E[%s]" % (
-                port, config['method'], config['email']))
+            logging.error("Server Exists:  P[%d], M[%s], U[%s]" % (
+                port, config['method'], config['username']))
             return
-        logging.info("Server Added:   P[%d], M[%s], E[%s]" %
-                     (port, config['method'], config['email']))
+        logging.info("Server Added:   P[%d], M[%s], U[%s]" %
+                     (port, config['method'], config['username']))
         t = tcprelay.TCPRelay(config, self._dns_resolver, False,
                               self.stat_callback)
         u = udprelay.UDPRelay(config, self._dns_resolver, False,
@@ -104,8 +104,8 @@ class Manager(object):
             u.close(next_tick=False)
             del self._relays[port]
         else:
-            logging.error("Svr Not Exists: P[%d], M[%s], E[%s]" % (
-                port, config['method'], config['email']))
+            logging.error("Svr Not Exists: P[%d], M[%s], U[%s]" % (
+                port, config['method'], config['username']))
 
     def stat_port(self, config):
         port = int(config['server_port'])
