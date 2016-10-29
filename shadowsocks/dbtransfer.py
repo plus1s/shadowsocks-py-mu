@@ -18,7 +18,6 @@
 # under the License.
 
 import os
-import re
 import json
 import time
 import pytz
@@ -33,16 +32,6 @@ from datetime import datetime, timedelta
 from pyrad import client as pyradclient
 from pyrad.dictionary import Dictionary
 from shadowsocks.common import U, D
-
-
-def transform_datetime(data):
-    datetime_format = '%Y-%m-%d %H:%M:%S+00'
-    if isinstance(data, datetime):
-        return data.strftime(datetime_format)
-    elif isinstance(data, basestring) and re.match(r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\+00', data):
-        return datetime.strptime(data, datetime_format)
-    else:
-        logging.warn('WARN: cannot parse datetime {}'.format(data))
 
 
 class DbTransfer(object):
@@ -79,24 +68,30 @@ class DbTransfer(object):
             logging.warn('RADIUS: network error: {}'.format(error[1]))
 
     @staticmethod
-    def send_radius_acct(status_type, username, port, sessionid,
-                         sessiontime=0, inputoctets=0, outputoctets=0, terminatecause='Idle-Timeout'):
+    def send_radius_acct(attrs):
+        if isinstance(attrs, dict):
+            attrs = [attrs]
+
         radclient = DbTransfer.get_radclient()
-        req = radclient.CreateAcctPacket(User_Name=username)
-        req['Acct-Status-Type'] = status_type
-        req['Acct-Session-Id'] = sessionid
-        req['Called-Station-Id'] = port
-        req['Calling-Station-Id'] = config.NODE_NAME
-        req['NAS-Port-Id'] = 'ShadowSocks'
-        if status_type == 'Start':
-            req['NAS-IP-Address'] = config.RADIUS_NAS_IP
-        elif status_type in ('Interim-Update', 'Stop'):
-            req['Acct-Session-Time'] = sessiontime
-            req['Acct-Input-Octets'] = inputoctets
-            req['Acct-Output-Octets'] = outputoctets
-            if status_type == 'Stop':
-                req['Acct-Terminate-Cause'] = terminatecause
-        DbTransfer.send_radius_packet(req)
+
+        for attr in attrs:
+            req = radclient.CreateAcctPacket(User_Name=attr['username'])
+            req['Acct-Status-Type'] = attr['status_type']
+            req['Acct-Session-Id'] = attr['sessionid']
+            req['Called-Station-Id'] = attr['port']
+            req['Calling-Station-Id'] = config.NODE_NAME
+            req['NAS-Port-Id'] = 'ShadowSocks'
+
+            if attr['status_type'] == 'Start':
+                req['NAS-IP-Address'] = config.RADIUS_NAS_IP
+            elif attr['status_type'] in ('Interim-Update', 'Stop'):
+                req['Acct-Session-Time'] = attr.get('sessiontime', 0)
+                req['Acct-Input-Octets'] = attr.get('inputoctets', 0)
+                req['Acct-Output-Octets'] = attr.get('outputoctets', 0)
+                if attr['status_type'] == 'Stop':
+                    req['Acct-Terminate-Cause'] = attr.get('terminatecause', 'Idle-Timeout')
+
+            DbTransfer.send_radius_packet(req)
 
     @staticmethod
     def get_servers_transfer():
@@ -151,64 +146,69 @@ class DbTransfer(object):
         now = pytz.utc.localize(datetime.utcnow())
 
         all_ports = list(set(dt_transfer.keys()).union(set(accts.keys())))
+        attrs = []
 
         for port in all_ports:
-            attrs = {'port': port}
+            attr = {'port': port}
 
             if port in accts:
-                # ports that have active sessions in radius
+                # Ports in accts are the ones have active acct sessions open.
                 acct = accts[port]
                 seconds_since_start = int((now - acct['Acct-Start-Time']).total_seconds())
                 seconds_since_last_update = int((now - acct['Acct-Update-Time']).total_seconds())
 
-                attrs.update({
+                attr.update({
                     'username': acct['User-Name'],
                     'sessionid': acct['Acct-Session-Id'],
                     'sessiontime': seconds_since_start,
                 })
 
                 if port in dt_transfer:
-                    # port in both accts and dt_transfer: opened sessions with traffic
+                    # So this port shows up in both accts and dt_transfer.
+                    # Just send interim updates to it to update the traffic usage.
 
-                    attrs.update({
+                    attr.update({
                         'status_type': 'Interim-Update',
                         'inputoctets': acct['Acct-Input-Octets'] + dt_transfer[port][D],
                         'outputoctets': acct['Acct-Output-Octets'] + dt_transfer[port][U],
                     })
 
-                else:  # port in acct (session) but not dt_transfer
-                    # no traffic, but not timed out either
+                else:
+                    # This port does have active acct sessions, but has no traffic since last update.
                     if seconds_since_last_update < config.RADIUS_IDLE_TIMEOUT:
-                        if config.SS_VERBOSE:
-                            logging.info(
-                                'No usage for port {}: U[{}], however IDLE_TIMEOUT is still not reached yet, skipping.'
-                                .format(port, acct['User-Name'], ))
+                        # Skip to process the next port, because the session hasn't timed out yet.
+                        if config.SS_VERBOSE: logging.info('P[{}] U[{}]: no traffic, skipping'
+                                                           .format(port, acct['User-Name'], ))
                         continue
-                    # No traffic and timed out
-                    attrs.update({
-                        'status_type': 'Stop',
-                        'inputoctets': acct['Acct-Input-Octets'],
-                        'outputoctets': acct['Acct-Output-Octets'],
-                        'terminatecause': 'Idle-Timeout',
-                    })
+                    else:
+                        # Send `Stop` to close the timed out session.
+                        if config.SS_VERBOSE: logging.info('P[{}] U[{}]: no traffic, sending Idle-Timeout'
+                                                           .format(port, acct['User-Name'], ))
+                        attr.update({
+                            'status_type': 'Stop',
+                            'inputoctets': acct['Acct-Input-Octets'],
+                            'outputoctets': acct['Acct-Output-Octets'],
+                            'terminatecause': 'Idle-Timeout',
+                        })
+                attrs.append(attr.copy())
             else:
-                attrs.update({
+                attr.update({
                     'status_type': 'Start',
                     'username': users[port]['User-Name'],
                     'sessionid': 'ss-{node_name}-{port}-{ts}'.format(
                         node_name=config.NODE_NAME, port=port, ts=now.strftime('%s'),
                     ),
                 })
-                DbTransfer.send_radius_acct(**attrs)
-                attrs.update({
+                attrs.append(attr.copy())
+                attr.update({
                     'status_type': 'Interim-Update',
                     'inputoctets': dt_transfer[port][D],
                     'outputoctets': dt_transfer[port][U],
                 })
+                attrs.append(attr.copy())
 
-            DbTransfer.send_radius_acct(**attrs)
-
-        if config.SS_VERBOSE: logging.info('Accts sent to RADIUS')
+        if attrs: DbTransfer.send_radius_acct(attrs)
+        if config.SS_VERBOSE: logging.info('{} accts sent to RADIUS'.format(len(attrs)))
 
     @staticmethod
     def update_accts():
@@ -247,7 +247,7 @@ class DbTransfer(object):
                     if server['method'] != user['SS-Method']:
                         # encryption method changed
                         logging.info(
-                            'U[%s] Server is restarting: encryption method is changed' % port)
+                            'P[%s] Server is restarting: encryption method is changed' % port)
                         DbTransfer.send_command(
                             'remove: {"server_port":%s}' % port)
             else:
@@ -257,7 +257,7 @@ class DbTransfer(object):
                     'add: {"server_port": %s, "password":"%s", "method":"%s", "username":"%s"}' % (port, user['Cleartext-Password'], user['SS-Method'], user['User-Name']))
                 if config.MANAGE_BIND_IP != '127.0.0.1':
                     logging.info(
-                        'U[%s] Server Started with username [%s] password [%s] and method [%s]' % (port, user['User-Name'], user['Cleartext-Password'], user['SS-Method']))
+                        'P[%s] Server Started with username [%s] password [%s] and method [%s]' % (port, user['User-Name'], user['Cleartext-Password'], user['SS-Method']))
 
     @staticmethod
     def clean_obsolete_accts():
@@ -280,24 +280,27 @@ class DbTransfer(object):
             (config.NODE_NAME, dead_acctupdatetime, )
         )
 
-        rows = cur.fetchall()
+        attrs = []
 
-        for row in rows:
+        for row in cur.fetchall():
             acctsessionid, username, calledstationid, acctstarttime, inputoctets, outputoctets = row
-            DbTransfer.send_radius_acct(
-                status_type='Stop',
-                username=username,
-                port=calledstationid,
-                sessionid=acctsessionid,
-                sessiontime=int((now - acctstarttime).total_seconds()),
-                inputoctets=inputoctets or 0,
-                outputoctets=outputoctets or 0,
-                terminatecause='Lost-Carrier',
-            )
+            attr = {
+                'status_type': 'Stop',
+                'username': username,
+                'port': calledstationid,
+                'sessionid': acctsessionid,
+                'sessiontime': int((now - acctstarttime).total_seconds()),
+                'inputoctets': inputoctets or 0,
+                'outputoctets': outputoctets or 0,
+                'terminatecause': 'Lost-Carrier',
+            }
+            attrs.append(attr)
 
         cur.close()
         conn.close()
-        if config.SS_VERBOSE and rows: logging.info('Obsoleted accts removed')
+
+        if attrs: DbTransfer.send_radius_acct(attrs)
+        if config.SS_VERBOSE: logging.info('{} obsoleted accts removed'.format(len(attrs)))
 
     @staticmethod
     def pull_all_accts():
@@ -335,6 +338,9 @@ class DbTransfer(object):
 
     @staticmethod
     def pull_all_users():
+        """
+        Fetch all the users has SS-Port set and cache them onto the disk.
+        """
         conn = DbTransfer.get_db_conn()
         cur = conn.cursor()
 
