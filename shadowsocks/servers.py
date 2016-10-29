@@ -96,7 +96,7 @@ def main():
     logging.info('-----------------------------------------')
     logging.info('Multi-User Shadowsocks Server Starting...')
     logging.info('Current Server Version: %s' % VERSION)
-    logging.info('Now using Database as the user interface')
+    logging.info('Now using RADIUS as the user interface')
     logging.info('Now starting manager thread...')
     thread.start_new_thread(manager.run, (configer, subprocess_callback,))
     time.sleep(5)
