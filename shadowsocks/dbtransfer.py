@@ -17,6 +17,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import os
 import re
 import json
 import time
@@ -124,7 +125,28 @@ class DbTransfer(object):
                                   dict=Dictionary(config.RADIUS_DICTIONARY))
 
     @staticmethod
-    def push_all_users(users, accts):
+    def get_users_from_cache():
+        with open(config.USERS_CACHE, 'r') as f:
+            users = json.load(f)
+        return users
+
+    @staticmethod
+    def thread_runner(function, interval):
+        socket.setdefaulttimeout(config.DB_TIMEOUT)
+        while True:
+            try:
+                getattr(DbTransfer, function)()
+            except Exception as e:
+                if config.SS_VERBOSE:
+                    import traceback
+                    traceback.print_exc()
+                logging.error('Except thrown while running {}: {}'.format(function, e))
+            finally:
+                time.sleep(interval)
+
+    @staticmethod
+    def push_all_accts(accts):
+        users = DbTransfer.get_users_from_cache()
         dt_transfer = DbTransfer.get_servers_transfer()
         now = pytz.utc.localize(datetime.utcnow())
 
@@ -189,12 +211,19 @@ class DbTransfer(object):
         if config.SS_VERBOSE: logging.info('Accts sent to RADIUS')
 
     @staticmethod
-    def update_servers(users):
+    def update_accts():
+        DbTransfer.clean_obsolete_accts()
+        accts = DbTransfer.pull_all_accts()
+        DbTransfer.push_all_accts(accts)
+
+    @staticmethod
+    def update_servers():
         """
         - Stop a server if the user is disabled or runs out of bwlimit
         - Restart a server if the user changes the encryption method
         - Start a valid server if it's not running (normally, newly added servers)
         """
+        users = DbTransfer.pull_all_users()
         for port in users:
             user = users[port]
             server = json.loads(DbTransfer.send_command(
@@ -231,54 +260,8 @@ class DbTransfer(object):
                         'U[%s] Server Started with username [%s] password [%s] and method [%s]' % (port, user['User-Name'], user['Cleartext-Password'], user['SS-Method']))
 
     @staticmethod
-    def thread_pull():
-        """
-        - Pull all users from radcheck
-        - Update local subservers according to users fetched in the first step
-
-        dt_transfer NOT required.
-        """
-        socket.setdefaulttimeout(config.DB_TIMEOUT)
-        while True:
-            try:
-                users = DbTransfer.pull_all_users()
-                DbTransfer.update_servers(users)
-            except Exception as e:
-                if config.SS_VERBOSE:
-                    import traceback
-                    traceback.print_exc()
-                logging.error('Except thrown while pulling user data:%s' % e)
-            finally:
-                time.sleep(config.CHECKTIME)
-
-    @staticmethod
-    def thread_push():
-        """
-        - Pull all active acct sessions on this SS node
-        - Clean up all obsoleted acct sessions
-        - Send 'Interim-Update' or 'Stop' acct req accordingly
-        """
-        socket.setdefaulttimeout(config.DB_TIMEOUT)
-        while True:
-            try:
-                DbTransfer.clean_obsolete_accts()
-
-                users = DbTransfer.pull_all_users()
-                accts = DbTransfer.pull_all_accts()
-                DbTransfer.push_all_users(users, accts)
-            except Exception as e:
-                import traceback
-                if config.SS_VERBOSE:
-                    traceback.print_exc()
-                logging.error('Except thrown while pushing user data:%s' % e)
-            finally:
-                time.sleep(config.SYNCTIME)
-
-    @staticmethod
     def clean_obsolete_accts():
         """
-        This method runs on each pull_all_users().
-
         - Fetch all obsoleted sessions on this SS node.
         - Send "Stop" acct req via radclient to clean up those sessions.
 
@@ -347,7 +330,7 @@ class DbTransfer(object):
         cur.close()
         conn.close()
 
-        if config.SS_VERBOSE: logging.info('{} accts fetched from DB'.format(len(accts)))
+        if config.SS_VERBOSE: logging.info('{} accts pulled from DB'.format(len(accts)))
         return accts
 
     @staticmethod
@@ -382,7 +365,11 @@ class DbTransfer(object):
         cur.close()
         conn.close()
 
-        if config.SS_VERBOSE: logging.info('{} users pulled from DB'.format(len(users)))
-        # TODO: serialization
-        # TODO: polish up texts (comments, messages)
+        # Dump users onto disk
+        with open(config.USERS_CACHE_TMP, 'w') as f:
+            json.dump(users, f)
+        os.rename(config.USERS_CACHE_TMP, config.USERS_CACHE)
+
+        if config.SS_VERBOSE: logging.info('{} users pulled from DB and dumped'.format(len(users)))
+
         return users

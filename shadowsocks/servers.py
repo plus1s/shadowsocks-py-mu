@@ -100,11 +100,11 @@ def main():
     logging.info('Now starting manager thread...')
     thread.start_new_thread(manager.run, (configer, subprocess_callback,))
     time.sleep(5)
-    logging.info('Now starting user pulling thread...')
-    thread.start_new_thread(DbTransfer.thread_pull, ())
+    logging.info('Now starting users / servers update thread...')
+    thread.start_new_thread(DbTransfer.thread_runner, ('update_servers', config.CHECKTIME, ))
     time.sleep(5)
-    logging.info('Now starting user pushing thread...')
-    thread.start_new_thread(DbTransfer.thread_push, ())
+    logging.info('Now starting accts update thread...')
+    thread.start_new_thread(DbTransfer.thread_runner, ('update_accts', config.SYNCTIME, ))
 
     while True:
         time.sleep(100)

@@ -17,6 +17,8 @@ DB_USER = 'dbuser'
 DB_PASS = 'dbpass'
 DB_NAME = 'radius'
 DB_TIMEOUT = 30
+USERS_CACHE = '/tmp/ss_users_cache.json'
+USERS_CACHE_TMP = '{}.tmp'.format(USERS_CACHE)
 
 # Time interval between 2 pulls from the database
 CHECKTIME = 30
