@@ -81,10 +81,9 @@ class DbTransfer(object):
             req['Called-Station-Id'] = attr['port']
             req['Calling-Station-Id'] = config.NODE_NAME
             req['NAS-Port-Id'] = 'ShadowSocks'
+            req['NAS-IP-Address'] = config.RADIUS_NAS_IP
 
-            if attr['status_type'] == 'Start':
-                req['NAS-IP-Address'] = config.RADIUS_NAS_IP
-            elif attr['status_type'] in ('Interim-Update', 'Stop'):
+            if attr['status_type'] in ('Interim-Update', 'Stop'):
                 req['Acct-Session-Time'] = attr.get('sessiontime', 0)
                 req['Acct-Input-Octets'] = attr.get('inputoctets', 0)
                 req['Acct-Output-Octets'] = attr.get('outputoctets', 0)
