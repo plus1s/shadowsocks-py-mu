@@ -6,7 +6,7 @@ This project is https://github.com/shadowsocks/shadowsocks clone. I JUST fix bug
 shadowsocks
 ===========
 
-|PyPI version| |Build Status| |Coverage Status|
+|PyPI version| |Build Status|
 
 A fast tunnel proxy that helps you bypass firewalls.
 
