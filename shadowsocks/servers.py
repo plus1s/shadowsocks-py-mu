@@ -91,7 +91,8 @@ def main():
         'forbidden_ip': config.SS_FORBIDDEN_IP,
         'firewall_mode': config.SS_FIREWALL_MODE,
         'firewall_trusted': config.SS_FIREWALL_TRUSTED,
-        'firewall_ports': firewall_ports
+        'firewall_ports': firewall_ports,
+        'prefer_ipv6': config.PREFER_IPV6,
     }
     logging.info('-----------------------------------------')
     logging.info('Multi-User Shadowsocks Server Starting...')

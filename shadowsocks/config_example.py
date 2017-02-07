@@ -67,6 +67,8 @@ SS_FASTOPEN = True
 # Shadowsocks Time Out
 # It should > 180s as some protocol has keep-alive packet of 3 min, Eg.: bt
 SS_TIMEOUT = 185
+# Prefer IPv6
+PREFER_IPV6 = False
 
 
 # Firewall Settings
