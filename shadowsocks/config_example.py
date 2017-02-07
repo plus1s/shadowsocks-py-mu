@@ -14,6 +14,9 @@ CONFIG_VERSION = '20160623-2'
 # Be careful and check whether your app supports this API BEFORE you enable this feature
 API_ENABLED = False
 
+# Prefer IPv6
+PREFER_IPV6 = False
+
 # Database Config
 # `mysql` or `postgresql`
 DB_TYPE = 'mysql'
