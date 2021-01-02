@@ -9,13 +9,25 @@ CONFIG_VERSION = '20160623-2'
 
 # Manyuser Interface Settings
 # ---------------------------
-NODE_NAME = socket.gethostname()
-# Radius Database Config
-DB_HOST = 'radiusdb.com'
-DB_PORT = 5432
-DB_USER = 'dbuser'
-DB_PASS = 'dbpass'
-DB_NAME = 'radius'
+# If API is enabled, database will be no longer used
+# The known app that supports API is SS-Panel V3
+# Be careful and check whether your app supports this API BEFORE you enable this feature
+API_ENABLED = False
+
+# Prefer IPv6
+PREFER_IPV6 = False
+
+# Database Config
+# `mysql` or `postgresql`
+DB_TYPE = 'mysql'
+DB_HOST = 'mengsky.net'
+DB_PORT = 3306
+DB_USER = 'root'
+DB_PASS = 'root'
+DB_NAME = 'shadowsocks'
+# USUALLY this variable do not need to be changed
+DB_USER_TABLE = 'users'
+# This is also the timeout of connecting to the API
 DB_TIMEOUT = 30
 USERS_CACHE = '/tmp/ss_users_cache.json'
 USERS_CACHE_TMP = '{}.tmp'.format(USERS_CACHE)
