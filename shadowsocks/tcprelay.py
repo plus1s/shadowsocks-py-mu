@@ -294,7 +294,7 @@ class TCPRelayHandler(object):
 
     @shell.exception_handle(self_=True, destroy=True, conn_err=True)
     def _handle_stage_addr(self, data):
-        addr, port = self._local_sock.getsockname()[:2]
+        addr, port = self._client_address
         if self._is_local:
             cmd = common.ord(data[1])
             if cmd == CMD_UDP_ASSOCIATE:
