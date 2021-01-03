@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS `user` (
   `port` int(11) NOT NULL,
   `switch` tinyint(4) NOT NULL DEFAULT '1',
   `enable` tinyint(4) NOT NULL DEFAULT '1',
-  `method` varchar(20) NOT NULL DEFAULT 'aes-256-cfb',
+  `method` varchar(64) NOT NULL DEFAULT 'aes-256-cfb',
   `type` tinyint(4) NOT NULL DEFAULT '1',
   `last_get_gift_time` int(11) NOT NULL DEFAULT '0',
   `last_rest_pass_time` int(11) NOT NULL DEFAULT '0',

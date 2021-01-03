@@ -28,7 +28,17 @@ htmlcov
 .mr.developer.cfg
 
 .DS_Store
-.idea
 shadowsocks/config.py
 *.log
-*.pyc
+tags
+
+venv/
+
+# VS-code
+.vscode/
+
+# Pycharm
+.idea
+
+#ss
+config.json
